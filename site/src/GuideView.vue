@@ -2,20 +2,23 @@
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { CopyDocument } from "@element-plus/icons-vue";
-import { fetchMe } from "./auth";
+import { fetchMe, loginUrl } from "./auth";
 
 const { t } = useI18n();
 const HOST = window.location.origin;
 // 登录后 <你的APIKey> 占位符自动替换为当前 key（复制内容同步替换）
 const myKey = ref(null);
 const keyReady = ref(false);
+const signedIn = ref(false);
 
 onMounted(async () => {
   try {
     const me = await fetchMe();
     myKey.value = me.api_key?.api_key || null;
+    signedIn.value = true;
   } catch {
     myKey.value = null;
+    signedIn.value = false;
   } finally {
     keyReady.value = true;
   }
@@ -71,6 +74,17 @@ async function copy(name, text) {
       </div>
     </div>
 
+    <el-card v-if="keyReady && !signedIn" shadow="never">
+      <div class="login-hero">
+        <h3>{{ $t("guideLoginRequired") }}</h3>
+        <p class="muted">{{ $t("loginPrompt") }}</p>
+        <el-button type="primary" size="large" tag="a" :href="loginUrl()">
+          {{ $t("loginWithLinuxDo") }}
+        </el-button>
+      </div>
+    </el-card>
+
+    <template v-else>
     <el-card shadow="never" class="mb">
       <el-alert
         v-if="keyReady && myKey"
@@ -179,5 +193,6 @@ async function copy(name, text) {
       </div>
       <p class="muted small">{{ $t("guideKeyHint") }}</p>
     </el-card>
+    </template>
   </section>
 </template>

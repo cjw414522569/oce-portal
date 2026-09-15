@@ -166,10 +166,15 @@ function defaultCredential() {
   };
 }
 const credentialForm = reactive(defaultCredential());
-const userNavItems = computed(() => [
-  { key: "user", label: t("myKey"), icon: User },
-  { key: "guide", label: t("guide"), icon: List },
-]);
+// 未登录只显示「我的 Key」；接入指南含个人 key 内容，登录后才出现
+const userNavItems = computed(() =>
+  me.value
+    ? [
+        { key: "user", label: t("myKey"), icon: User },
+        { key: "guide", label: t("guide"), icon: List },
+      ]
+    : [{ key: "user", label: t("myKey"), icon: User }],
+);
 const navItems = computed(() => [
   { key: "overview", label: t("overview"), icon: TrendCharts },
   { key: "reports", label: t("reports"), icon: List },
@@ -518,6 +523,12 @@ function disconnect() {
   syncPath("overview"); // 停留在 /admin 连接页
 }
 function changeView(view) {
+  if (view === "guide" && !me.value) {
+    ElMessage.warning(t("loginRequired"));
+    activeView.value = "user";
+    syncPath("user");
+    return;
+  }
   if (ADMIN_VIEWS.has(view) && !api.value) {
     // 未连接运维面：回到连接页；取消则留在用户区
     ElMessage.warning(t("adminConnectRequired"));
