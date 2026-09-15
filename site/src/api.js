@@ -33,8 +33,18 @@ export class OCEApi {
   gc(payload) { return this.request("/admin/gc", { method: "POST", body: JSON.stringify(payload) }); }
   users() { return this.request("/admin/users"); }
   setUserStatus(id, status) { return this.request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
+  deleteUser(id) { return this.request(`/admin/users/${id}`, { method: "DELETE" }); }
+  batchDeleteUsers(ids) { return this.request("/admin/users/batch-delete", { method: "POST", body: JSON.stringify({ user_ids: ids }) }); }
+  deleteUsersRegistered(dateFrom, dateTo, dryRun) { return this.request("/admin/users/delete-registered", { method: "POST", body: JSON.stringify({ date_from: dateFrom, date_to: dateTo, dry_run: dryRun }) }); }
+  registrationInfo() { return this.request("/admin/users/registration"); }
+  setMaxUsers(maxUsers) { return this.request("/admin/users/registration", { method: "PATCH", body: JSON.stringify({ max_users: maxUsers }) }); }
   users() { return this.request("/admin/users"); }
   setUserStatus(id, status) { return this.request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
+  deleteUser(id) { return this.request(`/admin/users/${id}`, { method: "DELETE" }); }
+  batchDeleteUsers(ids) { return this.request("/admin/users/batch-delete", { method: "POST", body: JSON.stringify({ user_ids: ids }) }); }
+  deleteUsersRegistered(dateFrom, dateTo, dryRun) { return this.request("/admin/users/delete-registered", { method: "POST", body: JSON.stringify({ date_from: dateFrom, date_to: dateTo, dry_run: dryRun }) }); }
+  registrationInfo() { return this.request("/admin/users/registration"); }
+  setMaxUsers(maxUsers) { return this.request("/admin/users/registration", { method: "PATCH", body: JSON.stringify({ max_users: maxUsers }) }); }
   reportApiCalls(windowHours = 24, bucket = "hour") { return this.request(`/admin/reports/api-calls?window_hours=${windowHours}&bucket=${bucket}`); }
   reportRetrieval(windowHours = 24, bucket = "hour") { return this.request(`/admin/reports/retrieval?window_hours=${windowHours}&bucket=${bucket}`); }
   reportSlowQueries(windowHours = 24, limit = 50) { return this.request(`/admin/reports/retrieval/slow-queries?window_hours=${windowHours}&limit=${limit}`); }

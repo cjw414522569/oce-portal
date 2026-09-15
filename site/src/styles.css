@@ -484,3 +484,27 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
 .key-legacy p {
   margin: 0;
 }
+
+.quota-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.quota-setter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mt {
+  margin-top: 12px;
+}
