@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
-import { CopyDocument, Refresh, User } from "@element-plus/icons-vue";
-import { fetchMe, loginUrl, rotateKey } from "./auth";
+import { CopyDocument, Refresh, SwitchButton, User } from "@element-plus/icons-vue";
+import { fetchMe, loginUrl, logout, rotateKey } from "./auth";
 
 const { t } = useI18n();
 const me = ref(null);
@@ -13,18 +13,29 @@ const confirmRotate = ref(false);
 const issuedKey = ref("");
 const copied = ref(false);
 
-const usageWindows = computed(() =>
+const metrics = computed(() =>
   me.value
     ? [
         {
-          label: t("usage24h"),
-          calls: me.value.usage_24h.api_calls,
-          tokens: me.value.usage_24h.total_tokens,
+          title: t("apiCalls"),
+          value: me.value.usage_24h.api_calls,
+          accent: true,
+          foot: [t("usage24h")],
         },
         {
-          label: t("usage7d"),
-          calls: me.value.usage_7d.api_calls,
-          tokens: me.value.usage_7d.total_tokens,
+          title: t("tokens"),
+          value: me.value.usage_24h.total_tokens,
+          foot: [t("usage24h")],
+        },
+        {
+          title: t("apiCalls"),
+          value: me.value.usage_7d.api_calls,
+          foot: [t("usage7d")],
+        },
+        {
+          title: t("tokens"),
+          value: me.value.usage_7d.total_tokens,
+          foot: [t("usage7d")],
         },
       ]
     : [],
@@ -38,6 +49,10 @@ function avatarUrl(template) {
   if (sized.startsWith("http")) return sized;
   if (sized.startsWith("/")) return `https://linux.do${sized}`;
   return "";
+}
+
+function fmtTime(value) {
+  return value ? new Date(value).toLocaleString() : "--";
 }
 
 async function load() {
@@ -71,25 +86,48 @@ async function doRotate() {
   }
 }
 
+async function signOut() {
+  try {
+    await logout();
+  } catch {
+    /* 会话可能已失效 */
+  }
+  window.location.href = "/";
+}
+
 onMounted(load);
 </script>
 
 <template>
-  <section v-show="true" class="view-section user-view">
+  <section class="view-section user-view">
     <div class="page-heading">
       <div>
-        <div class="overline">{{ $t("userCenter") }}</div>
+        <div class="overline">{{ $t("userCenter") }} / ACCOUNT</div>
         <h2>{{ $t("myKey") }}</h2>
+        <p>{{ $t("loginPrompt") }}</p>
       </div>
+      <el-button
+        v-if="state === 'ready'"
+        :icon="Refresh"
+        :loading="state === 'loading'"
+        @click="load"
+        >{{ $t("refresh") }}</el-button
+      >
     </div>
 
-    <div v-if="state === 'loading'" class="muted">{{ $t("loading") }}</div>
+    <div v-if="state === 'loading'" class="user-empty muted">
+      {{ $t("syncing") }}
+    </div>
 
-    <el-card v-else-if="state === 'anonymous'" shadow="never" class="login-card">
-      <p class="connect-lede">{{ $t("loginPrompt") }}</p>
-      <el-button type="primary" size="large" tag="a" :href="loginUrl()">
-        {{ $t("loginWithLinuxDo") }}
-      </el-button>
+    <el-card v-else-if="state === 'anonymous'" class="login-card" shadow="never">
+      <div class="login-hero">
+        <el-icon :size="40" color="var(--oce-teal)"><User /></el-icon>
+        <h3>{{ $t("loginWithLinuxDo") }}</h3>
+        <p class="muted">{{ $t("loginPrompt") }}</p>
+        <el-button type="primary" size="large" tag="a" :href="loginUrl()">
+          {{ $t("loginWithLinuxDo") }}
+        </el-button>
+      </div>
     </el-card>
 
     <el-alert
@@ -101,110 +139,118 @@ onMounted(load);
     />
 
     <template v-else>
+      <!-- 账号横幅 -->
+      <el-card class="profile-card" shadow="never">
+        <div class="profile-row">
+          <el-avatar
+            :size="64"
+            :src="avatarUrl(me.user.avatar_template)"
+          >
+            <el-icon :size="28"><User /></el-icon>
+          </el-avatar>
+          <div class="profile-meta">
+            <div class="profile-name">
+              <strong>{{ me.user.name || me.user.username }}</strong>
+              <el-tag effect="dark" size="small" round>TL{{ me.user.trust_level }}</el-tag>
+            </div>
+            <small class="muted">@{{ me.user.username }} · LinuxDo</small>
+          </div>
+          <div class="profile-actions">
+            <span class="muted small"
+              >{{ $t("lastLogin") }}: {{ fmtTime(me.user.last_login_at) }}</span
+            >
+            <el-button text :icon="SwitchButton" @click="signOut">{{
+              $t("logout")
+            }}</el-button>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- 用量统计：与运维总览同款 metric 卡 -->
+      <el-row :gutter="14" class="metric-row">
+        <el-col v-for="(item, index) in metrics" :key="index" :xs="12" :sm="6">
+          <el-card class="metric-card" :class="{ accent: item.accent }" shadow="never">
+            <el-statistic :title="item.title" :value="item.value" group-separator="," />
+            <div class="metric-foot">
+              <span>{{ item.foot[0] }}</span>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <!-- Key 常显卡 -->
       <el-alert
         v-if="issuedKey"
         :title="$t('rotateNotice')"
         type="success"
-        :closable="true"
+        closable
         show-icon
         class="mb"
         @close="issuedKey = ''"
       />
-
-      <div class="user-grid">
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-header-row">
-              <span>{{ $t("account") }}</span>
-            </div>
-          </template>
-          <div class="user-row">
-            <el-avatar :size="56" :src="avatarUrl(me.user.avatar_template)">
-              <el-icon :size="24"><User /></el-icon>
-            </el-avatar>
-            <div class="user-meta">
-              <strong>{{ me.user.name || me.user.username }}</strong>
-              <small class="muted">@{{ me.user.username }}</small>
-            </div>
-            <el-tag effect="plain" round>TL{{ me.user.trust_level }}</el-tag>
+      <el-card class="key-card" shadow="never">
+        <template #header>
+          <div class="card-header-row">
+            <span class="overline">API KEY</span>
+            <el-tag
+              v-if="me.api_key"
+              :type="me.api_key.status === 'active' ? 'success' : 'info'"
+              size="small"
+              effect="plain"
+              >{{ me.api_key.status }}</el-tag
+            >
           </div>
-        </el-card>
+        </template>
 
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-header-row">
-              <span>{{ $t("apiKey") }}</span>
-              <el-tag
-                v-if="me.api_key"
-                :type="me.api_key.status === 'active' ? 'success' : 'info'"
-                size="small"
-                >{{ me.api_key.status }}</el-tag
-              >
-            </div>
-          </template>
-          <template v-if="me.api_key && me.api_key.api_key">
-            <div class="key-line">
-              <code class="key-plaintext">{{ me.api_key.api_key }}</code>
-              <el-button
-                size="small"
-                :icon="CopyDocument"
-                @click="copyKey(me.api_key.api_key)"
-                >{{ copied ? $t("copied") : $t("copy") }}</el-button
-              >
-            </div>
-            <div class="key-actions">
-              <template v-if="confirmRotate">
-                <el-button
-                  type="danger"
-                  :loading="rotating"
-                  @click="doRotate"
-                  >{{ $t("confirmRotate") }}</el-button
-                >
-                <el-button text @click="confirmRotate = false">{{
-                  $t("cancel")
-                }}</el-button>
-              </template>
-              <el-button v-else @click="confirmRotate = true"
-                >{{ $t("rotateKey") }}</el-button
-              >
-            </div>
-          </template>
-          <template v-else-if="me.api_key">
+        <template v-if="me.api_key && me.api_key.api_key">
+          <div class="key-display">
+            <code>{{ me.api_key.api_key }}</code>
+            <el-button
+              type="primary"
+              plain
+              :icon="CopyDocument"
+              @click="copyKey(me.api_key.api_key)"
+              >{{ copied ? $t("copied") : $t("copy") }}</el-button
+            >
+          </div>
+          <el-descriptions class="key-meta" :column="3" size="small">
+            <el-descriptions-item :label="$t('keyLast4')">
+              <code>••••{{ me.api_key.key_last4 }}</code>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('createdAt')">{{
+              fmtTime(me.api_key.created_at)
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('lastUsed')">{{
+              fmtTime(me.api_key.last_used_at)
+            }}</el-descriptions-item>
+          </el-descriptions>
+          <div class="key-actions">
+            <template v-if="confirmRotate">
+              <span class="muted small">{{ $t("confirmRotate") }}</span>
+              <el-button type="danger" :loading="rotating" @click="doRotate">{{
+                $t("confirmRotate")
+              }}</el-button>
+              <el-button text @click="confirmRotate = false">{{
+                $t("cancel")
+              }}</el-button>
+            </template>
+            <el-button v-else @click="confirmRotate = true">{{
+              $t("rotateKey")
+            }}</el-button>
+          </div>
+        </template>
+
+        <template v-else-if="me.api_key">
+          <div class="key-legacy">
             <p class="muted">{{ $t("legacyKeyHint") }}</p>
             <el-button :loading="rotating" @click="doRotate">{{
               $t("rotateToReveal")
             }}</el-button>
-          </template>
-          <p v-else class="muted">{{ $t("noKey") }}</p>
-        </el-card>
-
-        <el-card
-          v-for="window in usageWindows"
-          :key="window.label"
-          shadow="never"
-        >
-          <template #header>{{ window.label }}</template>
-          <div class="usage-row">
-            <div class="usage-cell">
-              <strong>{{ window.calls }}</strong>
-              <small class="muted">{{ $t("apiCalls") }}</small>
-            </div>
-            <div class="usage-cell">
-              <strong>{{ window.tokens.toLocaleString() }}</strong>
-              <small class="muted">{{ $t("tokens") }}</small>
-            </div>
           </div>
-        </el-card>
-      </div>
+        </template>
 
-      <div class="user-actions">
-        <el-button :icon="Refresh" text @click="load">{{
-          $t("refresh")
-        }}</el-button>
-        <el-button text tag="a" href="#guide" class="muted">{{
-          $t("guide")
-        }}</el-button>
-      </div>
+        <p v-else class="muted">{{ $t("noKey") }}</p>
+      </el-card>
     </template>
   </section>
 </template>
