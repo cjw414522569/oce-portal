@@ -72,9 +72,6 @@ async function copy(name, text) {
     </div>
 
     <el-card shadow="never" class="mb">
-      <p class="connect-lede">
-        {{ $t("guideIntro") }}
-      </p>
       <el-alert
         v-if="keyReady && myKey"
         :title="$t('guideKeyInjected')"
