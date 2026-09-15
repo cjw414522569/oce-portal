@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-labelledby="title">
+  <title id="title">OpenContextEngine</title>
+  <rect width="220" height="220" rx="48" fill="#0b1220"/>
+  <path d="M84 48H69c-14 0-25 11-25 25v74c0 14 11 25 25 25h15M136 48h15c14 0 25 11 25 25v74c0 14-11 25-25 25h-15" fill="none" stroke="#19b7b5" stroke-width="15" stroke-linecap="round"/>
+  <path d="M77 81h63M77 99h47M77 117h32" fill="none" stroke="#f7fafc" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="148" cy="117" r="7" fill="#ff806b"/>
+</svg>
