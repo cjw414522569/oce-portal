@@ -1,10 +1,29 @@
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { CopyDocument } from "@element-plus/icons-vue";
+import { fetchMe } from "./auth";
 
 const { t } = useI18n();
 const HOST = window.location.origin;
+// 登录后 <你的APIKey> 占位符自动替换为当前 key（复制内容同步替换）
+const myKey = ref(null);
+const keyReady = ref(false);
+
+onMounted(async () => {
+  try {
+    const me = await fetchMe();
+    myKey.value = me.api_key?.api_key || null;
+  } catch {
+    myKey.value = null;
+  } finally {
+    keyReady.value = true;
+  }
+});
+
+function withKey(text) {
+  return myKey.value ? text.replaceAll("<你的APIKey>", myKey.value) : text;
+}
 
 const blocks = {
   cliPosix: `uv tool install opencontextengine-client
@@ -56,6 +75,20 @@ async function copy(name, text) {
       <p class="connect-lede">
         {{ $t("guideIntro") }}
       </p>
+      <el-alert
+        v-if="keyReady && myKey"
+        :title="$t('guideKeyInjected')"
+        type="success"
+        :closable="false"
+        show-icon
+      />
+      <el-alert
+        v-else-if="keyReady"
+        :title="$t('guideKeyNotReady')"
+        type="info"
+        :closable="false"
+        show-icon
+      />
     </el-card>
 
     <el-card shadow="never" class="mb">
@@ -66,10 +99,10 @@ async function copy(name, text) {
           size="small"
           text
           :icon="CopyDocument"
-          @click="copy('cliPosix', blocks.cliPosix)"
+          @click="copy('cliPosix', withKey(blocks.cliPosix))"
           >{{ copiedKey === "cliPosix" ? $t("copied") : $t("copy") }}</el-button
         >
-        <pre><code>{{ blocks.cliPosix }}</code></pre>
+        <pre><code>{{ withKey(blocks.cliPosix) }}</code></pre>
       </div>
     </el-card>
 
@@ -81,11 +114,11 @@ async function copy(name, text) {
           size="small"
           text
           :icon="CopyDocument"
-          @click="copy('cliWindows', blocks.cliWindows)"
+          @click="copy('cliWindows', withKey(blocks.cliWindows))"
           >{{
             copiedKey === "cliWindows" ? $t("copied") : $t("copy")
           }}</el-button>
-        <pre><code>{{ blocks.cliWindows }}</code></pre>
+        <pre><code>{{ withKey(blocks.cliWindows) }}</code></pre>
       </div>
     </el-card>
 
@@ -97,11 +130,11 @@ async function copy(name, text) {
           size="small"
           text
           :icon="CopyDocument"
-          @click="copy('mcpWindows', blocks.mcpWindows)"
+          @click="copy('mcpWindows', withKey(blocks.mcpWindows))"
           >{{
             copiedKey === "mcpWindows" ? $t("copied") : $t("copy")
           }}</el-button>
-        <pre><code>{{ blocks.mcpWindows }}</code></pre>
+        <pre><code>{{ withKey(blocks.mcpWindows) }}</code></pre>
       </div>
       <div class="codeblock">
         <el-button
@@ -109,11 +142,11 @@ async function copy(name, text) {
           size="small"
           text
           :icon="CopyDocument"
-          @click="copy('mcpPosix', blocks.mcpPosix)"
+          @click="copy('mcpPosix', withKey(blocks.mcpPosix))"
           >{{
             copiedKey === "mcpPosix" ? $t("copied") : $t("copy")
           }}</el-button>
-        <pre><code>{{ blocks.mcpPosix }}</code></pre>
+        <pre><code>{{ withKey(blocks.mcpPosix) }}</code></pre>
       </div>
     </el-card>
 
@@ -128,7 +161,7 @@ async function copy(name, text) {
         >
         <el-descriptions-item label="Env">
           <code>OCE_API_URL={{ HOST }}</code><br />
-          <code>OCE_API_KEY=&lt;你的APIKey&gt;</code>
+          <code>OCE_API_KEY={{ myKey || "<你的APIKey>" }}</code>
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -141,11 +174,11 @@ async function copy(name, text) {
           size="small"
           text
           :icon="CopyDocument"
-          @click="copy('healthCheck', blocks.healthCheck)"
+          @click="copy('healthCheck', withKey(blocks.healthCheck))"
           >{{
             copiedKey === "healthCheck" ? $t("copied") : $t("copy")
           }}</el-button>
-        <pre><code>{{ blocks.healthCheck }}</code></pre>
+        <pre><code>{{ withKey(blocks.healthCheck) }}</code></pre>
       </div>
       <p class="muted small">{{ $t("guideKeyHint") }}</p>
     </el-card>

@@ -328,6 +328,8 @@ const common = {
   guideHealth: "连通性自检",
   guideKeyHint: "Key 只放环境变量，不要写进配置文件或仓库；首次索引较慢（约 350 文件 / 3 分钟）。",
   sameOriginHint: "门户与后端同源部署，只需填写管理员密钥即可进入运维控制台。",
+  guideKeyInjected: "已自动将命令中的占位符替换为你的 API Key，直接复制即可使用。",
+  guideKeyNotReady: "登录并在「我的 Key」页获取（或轮换一次启用常显）后，命令将自动替换为你的 Key。",
 };
 
 const messages = {
@@ -665,6 +667,8 @@ const messages = {
     guideHealth: "Health check",
     guideKeyHint: "Keep the key in environment variables only; first indexing is slow (~350 files / 3 min).",
     sameOriginHint: "The portal is served from the same origin as the backend; enter the admin key to open the console.",
+    guideKeyInjected: "Placeholders are replaced with your API key — copy and run.",
+    guideKeyNotReady: "Sign in and get your key (rotate once if needed) to auto-fill the commands.",
   },
 };
 
