@@ -27,7 +27,7 @@ import {
   User,
   Warning,
 } from "@element-plus/icons-vue";
-import { OCEApi, normalizeUrl } from "./api";
+import { OCEApi } from "./api";
 import { fetchMe, loginUrl, logout } from "./auth";
 import ReportsView from "./ReportsView.vue";
 import UserView from "./UserView.vue";
@@ -36,9 +36,8 @@ import UsersAdminView from "./UsersAdminView.vue";
 
 const { t, locale } = useI18n();
 const logoUrl = new URL("../assets/oce-mark.svg", import.meta.url).href;
-// 门户与后端同源部署（默认形态）直接用当前 origin；本地 dev 回落本机后端
-const DEV = /^(localhost|127\.0\.0\.1)(:|$)/.test(window.location.host);
-const DEFAULT_URL = DEV ? "http://127.0.0.1:8986" : window.location.origin;
+// 统一门户与后端同源部署，地址固定为当前 origin，无需填写
+const BACKEND_URL = window.location.origin;
 const DEFAULT_KEY = "sk-opencontextengine";
 const storage = {
   url: "oce-admin.url",
@@ -95,12 +94,10 @@ const operationLoading = reactive({
 });
 const gcResult = ref(null);
 const connectForm = reactive({
-  url: DEFAULT_URL,
   key: DEFAULT_KEY,
   remember: true,
 });
 const settingsForm = reactive({
-  url: DEFAULT_URL,
   key: DEFAULT_KEY,
   remember: true,
 });
@@ -405,11 +402,7 @@ function time() {
   }).format(new Date());
 }
 function host() {
-  try {
-    return new URL(api.value?.url || settingsForm.url).host;
-  } catch {
-    return "";
-  }
+  return window.location.host;
 }
 function kindLabel(kind) {
   return (
@@ -441,30 +434,20 @@ function resetReports() {
   reports.snapshotAt = 0;
 }
 function loadConnection() {
-  const storedUrl = localStorage.getItem(storage.url);
   const storedKey = localStorage.getItem(storage.key);
   const remember = localStorage.getItem(storage.remember) !== "false";
-  Object.assign(connectForm, {
-    url: storedUrl || DEFAULT_URL,
-    key: storedKey || DEFAULT_KEY,
-    remember,
-  });
-  Object.assign(settingsForm, {
-    url: storedUrl || DEFAULT_URL,
-    key: storedKey || DEFAULT_KEY,
-    remember,
-  });
+  Object.assign(connectForm, { key: storedKey || DEFAULT_KEY, remember });
+  Object.assign(settingsForm, { key: storedKey || DEFAULT_KEY, remember });
   const savedLocale = localStorage.getItem(storage.locale);
   if (savedLocale === "zh" || savedLocale === "en") locale.value = savedLocale;
-  return Boolean(storedUrl && storedKey);
+  return Boolean(storedKey);
 }
 function saveConnection() {
   if (settingsForm.remember) {
-    localStorage.setItem(storage.url, settingsForm.url);
     localStorage.setItem(storage.key, settingsForm.key);
     localStorage.setItem(storage.remember, "true");
   } else
-    [storage.url, storage.key, storage.remember].forEach((key) =>
+    [storage.key, storage.remember].forEach((key) =>
       localStorage.removeItem(key),
     );
 }
@@ -474,11 +457,10 @@ function setLocale(value) {
 }
 async function connect(form = connectForm) {
   connectionError.value = "";
-  const url = normalizeUrl(form.url);
   const key = form.key.trim();
-  if (!url || !key) return;
+  if (!key) return;
   loading.value = true;
-  const candidate = new OCEApi(url, key);
+  const candidate = new OCEApi(BACKEND_URL, key);
   try {
     const [, nextVersion, credentialResponse] = await Promise.all([
       candidate.health(),
@@ -489,10 +471,11 @@ async function connect(form = connectForm) {
     resetReports();
     version.value = nextVersion;
     credentials.value = credentialResponse?.credentials || [];
-    Object.assign(settingsForm, { url, key, remember: form.remember });
+    Object.assign(settingsForm, { key, remember: form.remember });
     saveConnection();
     screen.value = "workspace";
     activeView.value = "overview";
+    syncPath("overview");
     await refreshData();
     ElNotification({
       title: t("connected"),
@@ -532,6 +515,7 @@ function disconnect() {
   credentials.value = [];
   resetReports();
   screen.value = "connect";
+  syncPath("overview"); // 停留在 /admin 连接页
 }
 function changeView(view) {
   if (ADMIN_VIEWS.has(view) && !api.value) {
@@ -541,11 +525,18 @@ function changeView(view) {
     return;
   }
   activeView.value = view;
+  syncPath(view);
   if (view === "reports") loadReports();
+}
+function syncPath(view) {
+  const path = ADMIN_VIEWS.has(view) ? "/admin" : "/";
+  if (window.location.pathname !== path)
+    window.history.pushState({}, "", path);
 }
 function enterAsUser() {
   screen.value = "workspace";
   activeView.value = "user";
+  syncPath("user");
 }
 async function sessionLogout() {
   try {
@@ -820,7 +811,30 @@ async function loadSession() {
 }
 onMounted(() => {
   loadSession();
-  if (loadConnection()) connect(connectForm);
+  const remembered = loadConnection();
+  if (window.location.pathname === "/admin") {
+    // 管理控制台入口：记住过密钥则直连，否则停在连接页
+    if (remembered) connect(connectForm);
+    else screen.value = "connect";
+  } else {
+    // 用户中心为默认入口；顺带自动连接运维面（记住过时），左侧运维区即点即用
+    if (remembered) connect(connectForm);
+    else {
+      screen.value = "workspace";
+      activeView.value = "user";
+    }
+  }
+});
+window.addEventListener("popstate", () => {
+  // 浏览器前进/后退跨 / 与 /admin 时按路径复位视图
+  const isAdmin = window.location.pathname === "/admin";
+  if (isAdmin && api.value) {
+    activeView.value = "overview";
+    screen.value = "workspace";
+  } else if (!isAdmin) {
+    activeView.value = "user";
+    screen.value = "workspace";
+  }
 });
 </script>
 
@@ -834,20 +848,13 @@ onMounted(() => {
         <el-card class="connect-card" shadow="never"
           ><div class="overline">{{ $t("controlPlane") }} / 01</div>
           <h1>{{ $t("connect") }}<br /><span>OpenContextEngine</span></h1>
-          <p class="connect-lede">{{ $t("instanceHealth") }}</p>
+          <p class="connect-lede">{{ $t("sameOriginHint") }}</p>
           <el-form
             :model="connectForm"
             label-position="top"
             @submit.prevent="connect()"
-            ><el-form-item :label="$t('backendUrl')" required
-              ><el-input
-                v-model="connectForm.url"
-                type="url"
-                placeholder="http://127.0.0.1:8986"
-                size="large"
-              />
-              <div class="field-help">{{ $t("urlHint") }}</div></el-form-item
-            ><el-form-item :label="$t('adminKey')" required
+          >
+            <el-form-item :label="$t('adminKey')" required
               ><el-input
                 v-model="connectForm.key"
                 :type="showConnectKey ? 'text' : 'password'"
@@ -1674,10 +1681,6 @@ onMounted(() => {
                       }}</el-tag>
                     </div></template
                   ><el-form label-position="top"
-                    ><el-form-item :label="$t('backendUrl')"
-                      ><el-input
-                        v-model="settingsForm.url"
-                        type="url" /></el-form-item
                     ><el-form-item :label="$t('adminKey')"
                       ><el-input
                         v-model="settingsForm.key"

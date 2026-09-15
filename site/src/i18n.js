@@ -325,6 +325,7 @@ const common = {
   guideMcpCursor: "MCP · Cursor 及其他宿主",
   guideHealth: "连通性自检",
   guideKeyHint: "Key 只放环境变量，不要写进配置文件或仓库；首次索引较慢（约 350 文件 / 3 分钟）。",
+  sameOriginHint: "门户与后端同源部署，只需填写管理员密钥即可进入运维控制台。",
 };
 
 const messages = {
@@ -659,6 +660,7 @@ const messages = {
     guideMcpCursor: "MCP · Cursor and other hosts",
     guideHealth: "Health check",
     guideKeyHint: "Keep the key in environment variables only; first indexing is slow (~350 files / 3 min).",
+    sameOriginHint: "The portal is served from the same origin as the backend; enter the admin key to open the console.",
   },
 };
 
