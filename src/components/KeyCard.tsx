@@ -38,42 +38,50 @@ export default function KeyCard({ apiKey, onRotated }: Props) {
   return (
     <div className="card">
       <h2>API Key</h2>
-      {issued ? (
-        <div className="issued">
-          <div className="banner warn">
-            新 key 只显示这一次，旧 key 已立即失效。请复制保存：
-          </div>
+      {issued && (
+        <div className="banner warn">
+          新 key 已生效，旧 key 立即失效：
           <code className="key-plaintext">{issued.api_key}</code>
+        </div>
+      )}
+      {apiKey && apiKey.api_key ? (
+        <>
+          <div className="key-row">
+            <code className="key-full">{apiKey.api_key}</code>
+            <span className="badge ok">{apiKey.status}</span>
+          </div>
           <div className="row">
-            <button className="button" onClick={() => copy(issued.api_key)}>
+            <button className="button" onClick={() => copy(apiKey.api_key as string)}>
               {copied ? "已复制" : "复制"}
             </button>
-            <button className="button ghost" onClick={() => setIssued(null)}>
-              完成
-            </button>
+            {confirming ? (
+              <>
+                <button className="button danger" disabled={busy} onClick={doRotate}>
+                  {busy ? "轮换中…" : "确认轮换（旧 key 立即失效）"}
+                </button>
+                <button className="button ghost" onClick={() => setConfirming(false)}>
+                  取消
+                </button>
+              </>
+            ) : (
+              <button className="button" onClick={() => setConfirming(true)}>
+                轮换 Key
+              </button>
+            )}
           </div>
-        </div>
+        </>
       ) : apiKey ? (
         <>
           <div className="key-row">
             <code>sk-oce-••••••••{apiKey.key_last4}</code>
             <span className="badge ok">{apiKey.status}</span>
           </div>
-          {confirming ? (
-            <div className="row">
-              <span className="muted small">确认轮换？旧 key 将立即失效。</span>
-              <button className="button danger" disabled={busy} onClick={doRotate}>
-                {busy ? "轮换中…" : "确认"}
-              </button>
-              <button className="button ghost" onClick={() => setConfirming(false)}>
-                取消
-              </button>
-            </div>
-          ) : (
-            <button className="button" onClick={() => setConfirming(true)}>
-              轮换 Key
-            </button>
-          )}
+          <p className="muted small">
+            这把 key 早于「常显」功能签发，轮换一次后即可完整显示。
+          </p>
+          <button className="button" disabled={busy} onClick={doRotate}>
+            {busy ? "轮换中…" : "轮换以启用完整显示"}
+          </button>
         </>
       ) : (
         <p className="muted">尚无 key</p>

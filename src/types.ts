@@ -11,6 +11,7 @@ export interface AuthApiKey {
   status: string;
   created_at: string;
   last_used_at: string | null;
+  api_key: string | null;
 }
 
 export interface AuthUsageWindow {

@@ -340,3 +340,8 @@ body {
   white-space: nowrap;
   width: 1%;
 }
+
+.key-full {
+  word-break: break-all;
+  font-size: 0.9rem;
+}
