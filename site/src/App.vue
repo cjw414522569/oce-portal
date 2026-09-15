@@ -455,7 +455,7 @@ function setLocale(value) {
   locale.value = value;
   localStorage.setItem(storage.locale, value);
 }
-async function connect(form = connectForm) {
+async function connect(form = connectForm, { view = "overview" } = {}) {
   connectionError.value = "";
   const key = form.key.trim();
   if (!key) return;
@@ -474,8 +474,8 @@ async function connect(form = connectForm) {
     Object.assign(settingsForm, { key, remember: form.remember });
     saveConnection();
     screen.value = "workspace";
-    activeView.value = "overview";
-    syncPath("overview");
+    activeView.value = view;
+    syncPath(view);
     await refreshData();
     ElNotification({
       title: t("connected"),
@@ -817,8 +817,9 @@ onMounted(() => {
     if (remembered) connect(connectForm);
     else screen.value = "connect";
   } else {
-    // 用户中心为默认入口；顺带自动连接运维面（记住过时），左侧运维区即点即用
-    if (remembered) connect(connectForm);
+    // 用户中心为默认入口；管理员（记住过密钥）自动连接后同样落在用户中心，
+    // 运维导航在其连接成功后自然出现
+    if (remembered) connect(connectForm, { view: "user" });
     else {
       screen.value = "workspace";
       activeView.value = "user";
@@ -924,55 +925,42 @@ window.addEventListener("popstate", () => {
             ><span>{{ item.label }}</span
             ><small>0{{ index + 1 }}</small></el-menu-item
           >
-          <div class="menu-caption menu-caption-spaced">
-            {{ $t("workspace") }}{{ api ? "" : ` (${$t("notConnected")})` }}
-          </div>
-          <el-menu-item
-            v-for="(item, index) in navItems.slice(0, 5)"
-            :key="item.key"
-            :index="item.key"
-            ><el-icon><component :is="item.icon" /></el-icon
-            ><span>{{ item.label }}</span
-            ><small>0{{ index + 3 }}</small></el-menu-item
-          >
-          <div class="menu-caption menu-caption-spaced">
-            {{ $t("instance") }}
-          </div>
-          <el-menu-item :index="navItems[5].key"
-            ><el-icon><component :is="navItems[5].icon" /></el-icon
-            ><span>{{ navItems[5].label }}</span
-            ><small>08</small></el-menu-item
+          <template v-if="api"
+            ><div class="menu-caption menu-caption-spaced">
+              {{ $t("workspace") }}
+            </div>
+            <el-menu-item
+              v-for="(item, index) in navItems.slice(0, 5)"
+              :key="item.key"
+              :index="item.key"
+              ><el-icon><component :is="item.icon" /></el-icon
+              ><span>{{ item.label }}</span
+              ><small>0{{ index + 3 }}</small></el-menu-item
+            >
+            <div class="menu-caption menu-caption-spaced">
+              {{ $t("instance") }}
+            </div>
+            <el-menu-item :index="navItems[5].key"
+              ><el-icon><component :is="navItems[5].icon" /></el-icon
+              ><span>{{ navItems[5].label }}</span
+              ><small>08</small></el-menu-item
+            ></template
           ></el-menu
         >
-        <div class="aside-bottom">
-          <div v-if="api" class="api-status">
+        <div v-if="api" class="aside-bottom">
+          <div class="api-status">
             <span class="pulse-dot"></span>
             <div>
               <strong>{{ $t("connected") }}</strong
               ><small>OCE {{ version?.version || "--" }}</small>
             </div>
           </div>
-          <div v-else class="api-status">
-            <div>
-              <strong class="muted">{{ $t("notConnected") }}</strong
-              ><small class="muted">{{ $t("adminHint") }}</small>
-            </div>
-          </div>
           <el-button
-            v-if="api"
             class="disconnect-button"
             text
             :icon="SwitchButton"
             @click="disconnect"
             >{{ $t("disconnect") }}</el-button
-          >
-          <el-button
-            v-else
-            class="disconnect-button"
-            text
-            :icon="Connection"
-            @click="screen = 'connect'"
-            >{{ $t("connect") }}</el-button
           >
         </div></el-aside
       ><el-container class="content-shell"
