@@ -1,10 +1,14 @@
 import type { AuthUser } from "../types";
 
-// avatar_template 是 Discourse 模板（{size} 占位）；无头像回退首字母
+// avatar_template 是 Discourse 模板（{size} 占位）；相对路径基于 linux.do 站点，
+// 其余无法解析的情况回退首字母
 function avatarUrl(template: string | null): string | null {
   if (!template) return null;
-  if (template.includes("{size}")) return template.replace("{size}", "144");
-  if (template.startsWith("http")) return template;
+  const sized = template.includes("{size}")
+    ? template.replace("{size}", "144")
+    : template;
+  if (sized.startsWith("http")) return sized;
+  if (sized.startsWith("/")) return `https://linux.do${sized}`;
   return null;
 }
 

@@ -59,9 +59,6 @@ export default function KeyCard({ apiKey, onRotated }: Props) {
             <code>sk-oce-••••••••{apiKey.key_last4}</code>
             <span className="badge ok">{apiKey.status}</span>
           </div>
-          <p className="muted small">
-            客户端用法：OCE_API_KEY 环境变量（详见服务端文档）
-          </p>
           {confirming ? (
             <div className="row">
               <span className="muted small">确认轮换？旧 key 将立即失效。</span>

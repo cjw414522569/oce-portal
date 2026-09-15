@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getMe, logout } from "../api";
+import { getMe, logout, UnauthorizedError } from "../api";
 import type { MeResponse } from "../types";
 import UserCard from "./UserCard";
 import KeyCard from "./KeyCard";
@@ -12,7 +12,16 @@ interface Props {
 export default function Dashboard({ initial }: Props) {
   const [me, setMe] = useState<MeResponse>(initial);
 
-  const refresh = async () => setMe(await getMe());
+  // 会话过期（401）时跳回登录页；其余错误静默保留现有视图
+  const refresh = async () => {
+    try {
+      setMe(await getMe());
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        window.location.href = "/";
+      }
+    }
+  };
 
   return (
     <div className="page">
