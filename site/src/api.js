@@ -23,6 +23,7 @@ export class OCEApi {
   stats() { return this.request("/admin/stats?window_hours=24"); }
   queue() { return this.request("/admin/queue"); }
   queueThroughput() { return this.request("/admin/queue/throughput"); }
+  clearFailed(limit = 1000) { return this.request("/admin/queue/clear-failed", { method: "POST", body: JSON.stringify({ limit }) }); }
   credentials() { return this.request("/admin/credentials"); }
   reloadCredentials() { return this.request("/admin/credentials/reload", { method: "POST" }); }
   createCredential(payload) { return this.request("/admin/credentials", { method: "POST", body: JSON.stringify(payload) }); }

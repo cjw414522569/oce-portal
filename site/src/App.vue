@@ -58,6 +58,7 @@ const version = ref(null);
 const stats = ref(null);
 const queue = ref(null);
 const throughput = ref(null);
+const clearingFailed = ref(false);
 const throughputLoading = ref(false);
 const credentials = ref([]);
 const activity = ref([]);
@@ -254,14 +255,36 @@ const kindOptions = computed(() => [
 const throughputTiles = computed(() =>
   throughput.value
     ? [
-        { key: "last_1m", label: t("window1m"), value: throughput.value.last_1m || 0 },
-        { key: "last_1h", label: t("window1h"), value: throughput.value.last_1h || 0 },
-        { key: "last_24h", label: t("window24h"), value: throughput.value.last_24h || 0 },
-        { key: "last_7d", label: t("window7d"), value: throughput.value.last_7d || 0 },
-        { key: "last_30d", label: t("window30d"), value: throughput.value.last_30d || 0 },
+        { key: "last_1m", label: t("window1m"), value: throughput.value.counts?.last_1m || 0, failed: throughput.value.failed?.last_1m || 0 },
+        { key: "last_1h", label: t("window1h"), value: throughput.value.counts?.last_1h || 0, failed: throughput.value.failed?.last_1h || 0 },
+        { key: "last_24h", label: t("window24h"), value: throughput.value.counts?.last_24h || 0, failed: throughput.value.failed?.last_24h || 0 },
+        { key: "last_7d", label: t("window7d"), value: throughput.value.counts?.last_7d || 0, failed: throughput.value.failed?.last_7d || 0 },
+        { key: "last_30d", label: t("window30d"), value: throughput.value.counts?.last_30d || 0, failed: throughput.value.failed?.last_30d || 0 },
       ]
     : [],
 );
+async function clearFailed() {
+  if (!throughput.value?.error_total) return;
+  try {
+    await ElMessageBox.confirm(
+      `${t("clearFailedConfirm")} (${throughput.value.error_total})?`,
+      t("clearFailed"),
+      { type: "warning", confirmButtonText: t("confirm") },
+    );
+  } catch {
+    return;
+  }
+  clearingFailed.value = true;
+  try {
+    const result = await api.value.clearFailed(20000);
+    ElMessage.success(`${t("clearedCount")}: ${result.cleared}`);
+    await refreshData();
+  } catch (err) {
+    ElMessage.error(String(err?.message || err));
+  } finally {
+    clearingFailed.value = false;
+  }
+}
 const elementLocale = computed(() => (locale.value === "en" ? en : zhCn));
 const currentTitle = computed(
   () =>
@@ -521,7 +544,7 @@ async function refreshData() {
     stats.value = nextStats;
     queue.value = nextQueue;
     credentials.value = nextCredentials?.credentials || [];
-    throughput.value = nextThroughput?.counts || null;
+    throughput.value = nextThroughput || null;
   } catch (error) {
     ElMessage.error(humanError(error));
   } finally {
@@ -1505,6 +1528,27 @@ window.addEventListener("popstate", () => {
                   ><el-statistic :title="item.label" :value="item.value" group-separator="," />
                   <div class="metric-foot">
                     <span>{{ $t("completedBlobs") }}</span>
+                    <span v-if="item.failed" class="failed-note"
+                      >{{ $t("failedBlobs") }} {{ item.failed }}</span
+                    >
+                  </div></el-card
+                ></el-col
+              ><el-col v-if="throughput.error_total" :xs="12" :sm="8" :md="4" :lg="4"
+                ><el-card class="metric-card throughput-failed" shadow="never"
+                  ><el-statistic
+                    :title="$t('failedBacklog')"
+                    :value="throughput.error_total"
+                    group-separator=","
+                  />
+                  <div class="metric-foot">
+                    <el-button
+                      size="small"
+                      type="danger"
+                      text
+                      :loading="clearingFailed"
+                      @click="clearFailed"
+                      >{{ $t("clearFailed") }}</el-button
+                    >
                   </div></el-card
                 ></el-col
               ></el-row

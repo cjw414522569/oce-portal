@@ -364,6 +364,11 @@ const common = {
   window24h: "近 24 小时",
   window7d: "近 7 天",
   window30d: "近 30 天",
+  failedBlobs: "失败",
+  failedBacklog: "失败堆积",
+  clearFailed: "清理失败",
+  clearFailedConfirm: "删除全部终态失败记录（客户端将自动重传）",
+  clearedCount: "已清理",
 };
 
 const messages = {
@@ -737,6 +742,11 @@ const messages = {
     window24h: "Last 24 hours",
     window7d: "Last 7 days",
     window30d: "Last 30 days",
+    failedBlobs: "failed",
+    failedBacklog: "Failed backlog",
+    clearFailed: "Clear failed",
+    clearFailedConfirm: "Delete all failed blob records (clients will re-upload)",
+    clearedCount: "Cleared",
   },
 };
 

@@ -512,3 +512,12 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
 .throughput-card {
   min-height: 118px;
 }
+
+.failed-note {
+  color: var(--el-color-danger);
+  font-weight: 700;
+}
+
+.throughput-failed {
+  border-top: 3px solid var(--el-color-danger);
+}
