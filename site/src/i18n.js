@@ -369,6 +369,9 @@ const common = {
   clearFailed: "清理失败",
   clearFailedConfirm: "删除全部终态失败记录（客户端将自动重传）",
   clearedCount: "已清理",
+  etaLabel: "预计清空",
+  etaRate: "近10分钟 {rate}/分",
+  backlog: "积压",
 };
 
 const messages = {
@@ -747,6 +750,9 @@ const messages = {
     clearFailed: "Clear failed",
     clearFailedConfirm: "Delete all failed blob records (clients will re-upload)",
     clearedCount: "Cleared",
+    etaLabel: "ETA to drain",
+    etaRate: "{rate}/min (10m avg)",
+    backlog: "backlog",
   },
 };
 

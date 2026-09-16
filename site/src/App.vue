@@ -252,6 +252,17 @@ const kindOptions = computed(() => [
   { value: "query_rewrite", label: t("kindQueryRewrite") },
   { value: "intent", label: t("kindIntent") },
 ]);
+function humanizeEta(seconds) {
+  if (seconds == null) return "--";
+  if (seconds < 60) return "<1m";
+  const m = Math.round(seconds / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h ${m % 60}m`;
+  const d = Math.floor(h / 24);
+  return `${d}d ${h % 24}h`;
+}
+
 const throughputTiles = computed(() =>
   throughput.value
     ? [
@@ -561,6 +572,7 @@ function disconnect() {
   screen.value = "connect";
   syncPath("overview"); // 停留在 /admin 连接页
 }
+let opsTimer = null;
 function changeView(view) {
   if (view === "guide" && !me.value) {
     ElMessage.warning(t("loginRequired"));
@@ -577,6 +589,16 @@ function changeView(view) {
   activeView.value = view;
   syncPath(view);
   if (view === "reports") loadReports();
+  // 运维页驻留时 30s 自动刷新（ETA「实时」感）；离开即停
+  if (view === "operations" && !opsTimer && api.value) {
+    opsTimer = setInterval(() => {
+      if (activeView.value === "operations") refreshData();
+      else {
+        clearInterval(opsTimer);
+        opsTimer = null;
+      }
+    }, 30000);
+  }
 }
 function syncPath(view) {
   const path = ADMIN_VIEWS.has(view) ? "/admin" : "/";
@@ -1548,6 +1570,18 @@ window.addEventListener("popstate", () => {
                       :loading="clearingFailed"
                       @click="clearFailed"
                       >{{ $t("clearFailed") }}</el-button
+                    >
+                  </div></el-card
+                ></el-col
+              ><el-col :xs="12" :sm="8" :md="4" :lg="4"
+                ><el-card class="metric-card eta-card" shadow="never"
+                  ><div class="eta-label overline">{{ $t("etaLabel") }}</div>
+                  <div class="eta-value">{{ humanizeEta(throughput.eta_seconds) }}</div>
+                  <div class="metric-foot">
+                    <span
+                      >{{ $t("etaRate", { rate: throughput.rate_per_minute ?? 0 }) }}
+                      · {{ $t("backlog") }}
+                      {{ (throughput.backlog ?? 0).toLocaleString() }}</span
                     >
                   </div></el-card
                 ></el-col

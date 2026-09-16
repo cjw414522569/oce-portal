@@ -521,3 +521,22 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
 .throughput-failed {
   border-top: 3px solid var(--el-color-danger);
 }
+
+.eta-card {
+  border-top: 3px solid var(--el-color-primary);
+}
+
+.eta-label {
+  color: var(--oce-muted);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.eta-value {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 29px;
+  letter-spacing: -0.08em;
+  line-height: 1;
+  color: var(--oce-navy);
+}
