@@ -508,3 +508,7 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
 .mt {
   margin-top: 12px;
 }
+
+.throughput-card {
+  min-height: 118px;
+}

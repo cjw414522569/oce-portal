@@ -57,6 +57,8 @@ const api = ref(null);
 const version = ref(null);
 const stats = ref(null);
 const queue = ref(null);
+const throughput = ref(null);
+const throughputLoading = ref(false);
 const credentials = ref([]);
 const activity = ref([]);
 const activeReportTab = ref("overview");
@@ -249,6 +251,17 @@ const kindOptions = computed(() => [
   { value: "query_rewrite", label: t("kindQueryRewrite") },
   { value: "intent", label: t("kindIntent") },
 ]);
+const throughputTiles = computed(() =>
+  throughput.value
+    ? [
+        { key: "last_1m", label: t("window1m"), value: throughput.value.last_1m || 0 },
+        { key: "last_1h", label: t("window1h"), value: throughput.value.last_1h || 0 },
+        { key: "last_24h", label: t("window24h"), value: throughput.value.last_24h || 0 },
+        { key: "last_7d", label: t("window7d"), value: throughput.value.last_7d || 0 },
+        { key: "last_30d", label: t("window30d"), value: throughput.value.last_30d || 0 },
+      ]
+    : [],
+);
 const elementLocale = computed(() => (locale.value === "en" ? en : zhCn));
 const currentTitle = computed(
   () =>
@@ -498,14 +511,17 @@ async function refreshData() {
   if (!api.value) return;
   loadingData.value = true;
   try {
-    const [nextStats, nextQueue, nextCredentials] = await Promise.all([
-      api.value.stats(),
-      api.value.queue(),
-      api.value.credentials(),
-    ]);
+    const [nextStats, nextQueue, nextCredentials, nextThroughput] =
+      await Promise.all([
+        api.value.stats(),
+        api.value.queue(),
+        api.value.credentials(),
+        api.value.queueThroughput().catch(() => null),
+      ]);
     stats.value = nextStats;
     queue.value = nextQueue;
     credentials.value = nextCredentials?.credentials || [];
+    throughput.value = nextThroughput?.counts || null;
   } catch (error) {
     ElMessage.error(humanError(error));
   } finally {
@@ -1483,6 +1499,16 @@ window.addEventListener("popstate", () => {
                 ><el-icon><Warning /></el-icon>{{ $t("caution") }}</el-tag
               >
             </div>
+            <el-row v-if="throughput" :gutter="14" class="metric-row"
+              ><el-col v-for="item in throughputTiles" :key="item.key" :xs="12" :sm="8" :md="4" :lg="4"
+                ><el-card class="metric-card throughput-card" shadow="never"
+                  ><el-statistic :title="item.label" :value="item.value" group-separator="," />
+                  <div class="metric-foot">
+                    <span>{{ $t("completedBlobs") }}</span>
+                  </div></el-card
+                ></el-col
+              ></el-row
+            >
             <el-row :gutter="14"
               ><el-col :xs="24" :lg="12"
                 ><el-card class="panel-card operation-card" shadow="never"

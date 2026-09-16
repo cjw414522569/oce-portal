@@ -358,6 +358,12 @@ const common = {
   quotaInvalid: "请输入 >= 0 的整数（0 = 不限）",
   quotaHint: "覆盖 AUTH_MAX_USERS（当前 env 值 {env}）；名额只挡新注册，不影响已注册用户",
   searchUser: "搜索用户 / ID",
+  completedBlobs: "完成 Blob",
+  window1m: "近 1 分钟",
+  window1h: "近 1 小时",
+  window24h: "近 24 小时",
+  window7d: "近 7 天",
+  window30d: "近 30 天",
 };
 
 const messages = {
@@ -725,6 +731,12 @@ const messages = {
     quotaInvalid: "Enter an integer >= 0 (0 = unlimited)",
     quotaHint: "Overrides AUTH_MAX_USERS (env: {env}); blocks new sign-ups only",
     searchUser: "Search user / ID",
+    completedBlobs: "blobs completed",
+    window1m: "Last minute",
+    window1h: "Last hour",
+    window24h: "Last 24 hours",
+    window7d: "Last 7 days",
+    window30d: "Last 30 days",
   },
 };
 
