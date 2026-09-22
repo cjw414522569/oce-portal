@@ -115,7 +115,7 @@ const medal = (rank) => ({ 1: "🥇", 2: "🥈", 3: "🥉" }[rank] || rank);
 
 // ≥10亿 用 B，≥100万 用 M，其余千分位；保留至多两位小数并去尾零
 function fmtCount(n) {
-  if (n >= 1e9) return Number((n / 1e9).toFixed(2)) + "B";
+  if (n / 1e9 >= 0.9995) return Number((n / 1e9).toFixed(2)) + "B";
   if (n >= 1e6) return Number((n / 1e6).toFixed(2)) + "M";
   return n.toLocaleString();
 }
