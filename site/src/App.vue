@@ -1,4 +1,5 @@
 <script setup>
+import { fmtCount } from "./format";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
@@ -362,9 +363,7 @@ const credentialRules = computed(() => ({
   ],
 }));
 function number(value) {
-  return Number(value || 0).toLocaleString(
-    locale.value === "en" ? "en-US" : "zh-CN",
-  );
+  return fmtCount(value);
 }
 function compactNumber(value) {
   const amount = Number(value || 0);
@@ -1115,6 +1114,7 @@ window.addEventListener("popstate", () => {
                   ><el-statistic
                     :title="$t('apiCalls')"
                     :value="stats?.api_calls?.count || 0"
+                    :formatter="number"
                   />
                   <div class="metric-foot">
                     <span
@@ -1134,6 +1134,7 @@ window.addEventListener("popstate", () => {
                   ><el-statistic
                     :title="$t('retrievalRequests')"
                     :value="stats?.retrieval?.count || 0"
+                    :formatter="number"
                   />
                   <div class="metric-foot">
                     <span
@@ -1148,7 +1149,7 @@ window.addEventListener("popstate", () => {
                   ><el-statistic
                     :title="$t('tokens')"
                     :value="stats?.tokens_total || 0"
-                    group-separator=","
+                    :formatter="number"
                   />
                   <div class="metric-foot">
                     <span
@@ -1162,6 +1163,7 @@ window.addEventListener("popstate", () => {
                   ><el-statistic
                     :title="$t('queuePending')"
                     :value="totalQueue"
+                    :formatter="number"
                   />
                   <div class="metric-foot">
                     <span>{{
@@ -1547,7 +1549,7 @@ window.addEventListener("popstate", () => {
             <el-row v-if="throughput" :gutter="14" class="metric-row"
               ><el-col v-for="item in throughputTiles" :key="item.key" :xs="12" :sm="8" :md="4" :lg="4"
                 ><el-card class="metric-card throughput-card" shadow="never"
-                  ><el-statistic :title="item.label" :value="item.value" group-separator="," />
+                  ><el-statistic :title="item.label" :value="item.value" :formatter="number" />
                   <div class="metric-foot">
                     <span>{{ $t("completedBlobs") }}</span>
                     <span v-if="item.failed" class="failed-note"
@@ -1560,7 +1562,7 @@ window.addEventListener("popstate", () => {
                   ><el-statistic
                     :title="$t('failedBacklog')"
                     :value="throughput.error_total"
-                    group-separator=","
+                    :formatter="number"
                   />
                   <div class="metric-foot">
                     <el-button

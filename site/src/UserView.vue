@@ -200,7 +200,7 @@ onUnmounted(() => clearInterval(boardTimer));
       <el-row :gutter="14" class="metric-row">
         <el-col v-for="(item, index) in metrics" :key="index" :xs="12" :sm="6">
           <el-card class="metric-card" :class="{ accent: item.accent }" shadow="never">
-            <el-statistic :title="item.title" :value="item.value" group-separator="," />
+            <el-statistic :title="item.title" :value="item.value" :formatter="fmtCount" />
             <div class="metric-foot">
               <span>{{ item.foot[0] }}</span>
             </div>

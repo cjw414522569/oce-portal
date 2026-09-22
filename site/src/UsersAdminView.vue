@@ -418,11 +418,11 @@ watch(() => props.api, load);
           </template>
         </el-table-column>
         <el-table-column :label="$t('apiCalls24h')" width="110" align="right">
-          <template #default="{ row }">{{ row.api_calls_24h }}</template>
+          <template #default="{ row }">{{ fmtCount(row.api_calls_24h) }}</template>
         </el-table-column>
         <el-table-column :label="$t('tokens24h')" width="130" align="right">
           <template #default="{ row }">{{
-            row.total_tokens_24h.toLocaleString()
+            fmtCount(row.total_tokens_24h)
           }}</template>
         </el-table-column>
         <el-table-column :label="$t('createdAt')" width="110">

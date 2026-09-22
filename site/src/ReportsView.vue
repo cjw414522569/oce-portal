@@ -58,7 +58,8 @@ const inventoryMetrics = computed(() => [
   { key: "symbol_total", label: t("symbolTotal"), value: props.reports.inventory?.symbol_total, icon: DataLine },
   { key: "chain_total", label: t("chainTotal"), value: props.reports.inventory?.chain_total, icon: Coin },
 ]);
-function number(value) { return Number(value || 0).toLocaleString(locale.value === "en" ? "en-US" : "zh-CN"); }
+import { fmtCount } from "./format";
+function number(value) { return fmtCount(Number(value || 0)); }
 function compact(value) {
   const amount = Number(value || 0);
   if (Math.abs(amount) >= 1e9) return `${(amount / 1e9).toFixed(1)}B`;
@@ -126,8 +127,8 @@ function loadingFor(key) { return Boolean(props.reports.loading?.[key]); }
 
     <div v-show="activeTab === 'overview'" class="report-tab-content">
       <el-row :gutter="14" class="metric-row">
-        <el-col :xs="12" :sm="6"><el-card class="metric-card accent" shadow="never"><el-statistic :title="$t('apiCalls')" :value="apiTotal" /><div class="metric-foot"><span>{{ number(apiErrors) }} {{ $t("errors") }}</span><b>{{ percent(apiTotal ? apiErrors / apiTotal : 0) }}</b></div></el-card></el-col>
-        <el-col :xs="12" :sm="6"><el-card class="metric-card" shadow="never"><el-statistic :title="$t('retrievalRequests')" :value="retrievalTotal" /><div class="metric-foot"><span>{{ number(retrievalEmpty) }} {{ $t("emptyResults") }}</span><b>{{ percent(retrievalTotal ? retrievalEmpty / retrievalTotal : 0) }}</b></div></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card class="metric-card accent" shadow="never"><el-statistic :title="$t('apiCalls')" :value="apiTotal" :formatter="number" /><div class="metric-foot"><span>{{ number(apiErrors) }} {{ $t("errors") }}</span><b>{{ percent(apiTotal ? apiErrors / apiTotal : 0) }}</b></div></el-card></el-col>
+        <el-col :xs="12" :sm="6"><el-card class="metric-card" shadow="never"><el-statistic :title="$t('retrievalRequests')" :value="retrievalTotal" :formatter="number" /><div class="metric-foot"><span>{{ number(retrievalEmpty) }} {{ $t("emptyResults") }}</span><b>{{ percent(retrievalTotal ? retrievalEmpty / retrievalTotal : 0) }}</b></div></el-card></el-col>
         <el-col :xs="12" :sm="6"><el-card class="metric-card" shadow="never"><el-statistic :title="$t('p95Latency')" :value="latestApiLatency" suffix="ms" /><div class="metric-foot"><span>{{ $t("latestBucket") }}</span><b>{{ bucketLabel(props.apiBuckets.at(-1)?.ts) }}</b></div></el-card></el-col>
         <el-col :xs="12" :sm="6"><el-card class="metric-card" shadow="never"><el-statistic :title="$t('emptyRate')" :value="Number(latestRetrievalRate * 100).toFixed(1)" suffix="%" /><div class="metric-foot"><span>{{ $t("latestBucket") }}</span><b>{{ bucketLabel(props.retrievalBuckets.at(-1)?.ts) }}</b></div></el-card></el-col>
       </el-row>
