@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Delete, Refresh, Search } from "@element-plus/icons-vue";
@@ -15,6 +15,12 @@ const error = ref("");
 const selection = ref([]);
 const search = ref("");
 
+// 服务端分页：page/page_size/search 都由后端处理
+const page = ref(1);
+const pageSize = ref(50);
+const total = ref(0);
+let searchTimer = null;
+
 const registration = reactive({
   info: null,
   maxUsersInput: null,
@@ -28,27 +34,27 @@ const rangeForm = reactive({
   deleting: false,
 });
 
-const filteredUsers = computed(() => {
-  const query = search.value.trim().toLowerCase();
-  if (!query) return users.value;
-  return users.value.filter(
-    (row) =>
-      row.username.toLowerCase().includes(query) ||
-      (row.name || "").toLowerCase().includes(query) ||
-      String(row.id) === query,
-  );
-});
-
 async function load() {
   if (!props.api) return;
   loading.value = true;
   error.value = "";
   try {
     const [listResponse, info] = await Promise.all([
-      props.api.users(),
+      props.api.users({
+        page: page.value,
+        page_size: pageSize.value,
+        search: search.value.trim() || undefined,
+      }),
       props.api.registrationInfo().catch(() => null),
     ]);
     users.value = listResponse?.users || [];
+    total.value = listResponse?.total ?? users.value.length;
+    // 删完当前页最后一条时回退一页
+    if (page.value > 1 && !users.value.length) {
+      page.value -= 1;
+      loading.value = false;
+      return load();
+    }
     if (info) {
       registration.info = info;
       registration.maxUsersInput = info.effective_max_users;
@@ -58,6 +64,20 @@ async function load() {
   } finally {
     loading.value = false;
   }
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    page.value = 1;
+    load();
+  }, 300);
+}
+
+function onSizeChange(size) {
+  pageSize.value = size;
+  page.value = 1;
+  load();
 }
 
 async function toggleStatus(row) {
@@ -341,7 +361,7 @@ watch(() => props.api, load);
         <div class="card-header-row">
           <span
             >{{ $t("users") }}
-            <small class="muted">({{ filteredUsers.length }})</small></span
+            <small class="muted">({{ total }})</small></span
           >
           <div class="range-row">
             <el-input
@@ -351,6 +371,7 @@ watch(() => props.api, load);
               clearable
               size="small"
               style="width: 200px"
+              @input="onSearchInput"
             />
             <el-button
               type="danger"
@@ -366,7 +387,7 @@ watch(() => props.api, load);
         </div>
       </template>
       <el-table
-        :data="filteredUsers"
+        :data="users"
         v-loading="loading"
         size="default"
         stripe
@@ -436,6 +457,18 @@ watch(() => props.api, load);
           <span class="muted">{{ loading ? $t("syncing") : "--" }}</span>
         </template>
       </el-table>
+      <div class="pagination-row">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[20, 50, 100, 200]"
+          layout="sizes, prev, pager, next, jumper"
+          background
+          @current-change="load"
+          @size-change="onSizeChange"
+        />
+      </div>
     </el-card>
   </section>
 </template>

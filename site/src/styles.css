@@ -505,6 +505,12 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
   flex-wrap: wrap;
 }
 
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
 .mt {
   margin-top: 12px;
 }

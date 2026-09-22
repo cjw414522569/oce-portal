@@ -33,14 +33,10 @@ export class OCEApi {
   resetQueue(payload) { return this.request("/admin/queue/reset", { method: "POST", body: JSON.stringify(payload) }); }
   requeueStale(payload) { return this.request("/admin/queue/requeue-stale", { method: "POST", body: JSON.stringify(payload) }); }
   gc(payload) { return this.request("/admin/gc", { method: "POST", body: JSON.stringify(payload) }); }
-  users() { return this.request("/admin/users"); }
-  setUserStatus(id, status) { return this.request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
-  deleteUser(id) { return this.request(`/admin/users/${id}`, { method: "DELETE" }); }
-  batchDeleteUsers(ids) { return this.request("/admin/users/batch-delete", { method: "POST", body: JSON.stringify({ user_ids: ids }) }); }
-  deleteUsersRegistered(dateFrom, dateTo, dryRun) { return this.request("/admin/users/delete-registered", { method: "POST", body: JSON.stringify({ date_from: dateFrom, date_to: dateTo, dry_run: dryRun }) }); }
-  registrationInfo() { return this.request("/admin/users/registration"); }
-  setMaxUsers(maxUsers) { return this.request("/admin/users/registration", { method: "PATCH", body: JSON.stringify({ max_users: maxUsers }) }); }
-  users() { return this.request("/admin/users"); }
+  users(params) {
+    const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== "")) : "";
+    return this.request(`/admin/users${qs ? `?${qs}` : ""}`);
+  }
   setUserStatus(id, status) { return this.request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
   deleteUser(id) { return this.request(`/admin/users/${id}`, { method: "DELETE" }); }
   batchDeleteUsers(ids) { return this.request("/admin/users/batch-delete", { method: "POST", body: JSON.stringify({ user_ids: ids }) }); }
