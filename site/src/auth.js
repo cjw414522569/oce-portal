@@ -31,3 +31,5 @@ export const rotateKey = () =>
 
 export const logout = () =>
   request("/auth/logout", { method: "POST" });
+
+export const fetchLeaderboard = () => request("/auth/leaderboard");

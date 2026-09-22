@@ -546,3 +546,31 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
   line-height: 1;
   color: var(--oce-navy);
 }
+
+.board-card {
+  margin-top: 14px;
+}
+
+.board-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.lb-rank {
+  font-size: 15px;
+}
+
+.board-foot {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.el-table .lb-me > td {
+  background: var(--el-color-warning-light-9) !important;
+}

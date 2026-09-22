@@ -1,9 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
-import { CopyDocument, Refresh, SwitchButton, User } from "@element-plus/icons-vue";
-import { fetchMe, loginUrl, logout, rotateKey } from "./auth";
+import { CopyDocument, Refresh, SwitchButton, User, Trophy } from "@element-plus/icons-vue";
+import { fetchLeaderboard, fetchMe, loginUrl, logout, rotateKey } from "./auth";
 
 const { t } = useI18n();
 const me = ref(null);
@@ -95,7 +95,30 @@ async function signOut() {
   window.location.href = "/";
 }
 
-onMounted(load);
+// 今日用量排行榜
+const board = ref(null);
+const boardLoading = ref(false);
+let boardTimer = null;
+
+async function loadBoard() {
+  boardLoading.value = true;
+  try {
+    board.value = await fetchLeaderboard();
+  } catch {
+    board.value = null; // 静默：排行榜是附加能力，失败不影响主视图
+  } finally {
+    boardLoading.value = false;
+  }
+}
+
+const medal = (rank) => ({ 1: "🥇", 2: "🥈", 3: "🥉" }[rank] || rank);
+
+onMounted(() => {
+  load();
+  loadBoard();
+  boardTimer = setInterval(loadBoard, 60000);
+});
+onUnmounted(() => clearInterval(boardTimer));
 </script>
 
 <template>
@@ -177,6 +200,55 @@ onMounted(load);
           </el-card>
         </el-col>
       </el-row>
+
+      <!-- 今日用量排行榜 -->
+      <el-card v-if="state === 'ready'" class="board-card" shadow="never" v-loading="boardLoading && !board">
+        <template #header>
+          <div class="card-header-row">
+            <span class="board-title">
+              <el-icon><Trophy /></el-icon>
+              {{ $t("leaderboardTitle") }}
+              <el-tag v-if="board" size="small" effect="plain">{{ board.day }}</el-tag>
+            </span>
+            <el-button text :icon="Refresh" :loading="boardLoading" @click="loadBoard">{{
+              $t("refresh")
+            }}</el-button>
+          </div>
+        </template>
+        <template v-if="board && board.entries.length">
+          <el-table
+            :data="board.entries"
+            size="small"
+            :row-class-name="({ row }) => (me && row.user_id === me.user.id ? 'lb-me' : '')"
+          >
+            <el-table-column :label="$t('rank')" width="70" align="center">
+              <template #default="{ row }">
+                <span class="lb-rank">{{ medal(row.rank) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('username')" min-width="160">
+              <template #default="{ row }">
+                <strong>{{ row.name || row.username }}</strong>
+                <small class="muted block">@{{ row.username }}</small>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('apiCalls')" width="110" align="right">
+              <template #default="{ row }">{{ row.api_calls.toLocaleString() }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('tokens')" width="130" align="right">
+              <template #default="{ row }">{{ row.total_tokens.toLocaleString() }}</template>
+            </el-table-column>
+          </el-table>
+          <div class="board-foot">
+            <template v-if="board.me">
+              <el-tag type="warning" effect="plain" size="small">{{ $t("lbMe") }}</el-tag>
+              {{ $t("lbMeRank", { rank: board.me.rank, total: board.total_users }) }}
+            </template>
+            <span v-else class="muted">{{ $t("lbNoUsageMe") }}</span>
+          </div>
+        </template>
+        <el-empty v-else-if="board" :description="$t('lbEmpty')" :image-size="60" />
+      </el-card>
 
       <!-- Key 常显卡 -->
       <el-alert
