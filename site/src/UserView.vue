@@ -120,10 +120,22 @@ function fmtCount(n) {
   return n.toLocaleString();
 }
 
+async function silentLoadMe() {
+  try {
+    me.value = await fetchMe(); // 只换数据，不重置页面加载态
+  } catch {
+    /* 会话失效等保持现状，由用户下一步操作时再暴露 */
+  }
+}
+
 onMounted(() => {
   load();
   loadBoard();
-  boardTimer = setInterval(loadBoard, 60000);
+  boardTimer = setInterval(() => {
+    if (document.hidden) return;
+    loadBoard();
+    if (state.value === "ready") silentLoadMe();
+  }, 60000);
 });
 onUnmounted(() => clearInterval(boardTimer));
 </script>

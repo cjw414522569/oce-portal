@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Delete, Refresh, Search } from "@element-plus/icons-vue";
@@ -20,6 +20,7 @@ const page = ref(1);
 const pageSize = ref(50);
 const total = ref(0);
 let searchTimer = null;
+let autoTimer = null;
 
 const registration = reactive({
   info: null,
@@ -227,7 +228,17 @@ async function deleteByRange() {
   }
 }
 
-onMounted(load);
+async function autoLoad() {
+  if (document.hidden || loading.value) return;
+  await load();
+}
+
+onMounted(() => {
+  load();
+  // 30s 自动刷新，无需手动点刷新
+  autoTimer = setInterval(autoLoad, 30000);
+});
+onUnmounted(() => clearInterval(autoTimer));
 watch(() => props.api, load);
 </script>
 

@@ -409,9 +409,9 @@ function bucketLabel(ts, bucket) {
   return bucket === "day" ? `${formatted} UTC` : formatted;
 }
 function stageLabel(stage) { return String(stage || "").replaceAll("_", " "); }
-async function loadReports(force = false) {
+async function loadReports(force = false, silent = false) {
   if (!api.value) return;
-  if (!force && reports.fetched && reports.snapshotAt && Date.now() - reports.snapshotAt < 300000) return;
+  if (!force && !silent && reports.fetched && reports.snapshotAt && Date.now() - reports.snapshotAt < 300000) return;
   const windowHours = Math.min(720, Math.max(1, Number(reportWindow.value) || 24));
   const bucket = reportBucket.value;
   const requests = {
@@ -425,11 +425,11 @@ async function loadReports(force = false) {
     storage: () => api.value.reportStorage(),
   };
   await Promise.all(Object.entries(requests).map(async ([key, request]) => {
-    reports.loading[key] = true;
+    if (!silent) reports.loading[key] = true;
     reports.errors[key] = "";
     try { reports[key] = await request(); }
     catch (error) { reports.errors[key] = humanError(error); }
-    finally { reports.loading[key] = false; }
+    finally { if (!silent) reports.loading[key] = false; }
   }));
   reports.fetched = true;
   reports.snapshotAt = Date.now();
@@ -507,6 +507,7 @@ function setLocale(value) {
   localStorage.setItem(storage.locale, value);
 }
 async function connect(form = connectForm, { view = "overview" } = {}) {
+  // 连接成功即启动自动刷新（具体页面节奏见 ADMIN_REFRESH_MS）
   connectionError.value = "";
   const key = form.key.trim();
   if (!key) return;
@@ -528,6 +529,7 @@ async function connect(form = connectForm, { view = "overview" } = {}) {
     activeView.value = view;
     syncPath(view);
     await refreshData();
+    startAdminAutoRefresh();
     ElNotification({
       title: t("connected"),
       message: t("connectedSuccess", { host: host() }),
@@ -540,9 +542,9 @@ async function connect(form = connectForm, { view = "overview" } = {}) {
     loading.value = false;
   }
 }
-async function refreshData() {
-  if (!api.value) return;
-  loadingData.value = true;
+async function refreshData(silent = false) {
+  if (!api.value || loadingData.value) return;
+  if (!silent) loadingData.value = true;
   try {
     const [nextStats, nextQueue, nextCredentials, nextThroughput] =
       await Promise.all([
@@ -556,12 +558,14 @@ async function refreshData() {
     credentials.value = nextCredentials?.credentials || [];
     throughput.value = nextThroughput || null;
   } catch (error) {
-    ElMessage.error(humanError(error));
+    // 静默轮询失败不弹 toast，避免后台刷新刷屏
+    if (!silent) ElMessage.error(humanError(error));
   } finally {
-    loadingData.value = false;
+    if (!silent) loadingData.value = false;
   }
 }
 function disconnect() {
+  stopAdminAutoRefresh();
   api.value = null;
   version.value = null;
   stats.value = null;
@@ -571,7 +575,35 @@ function disconnect() {
   screen.value = "connect";
   syncPath("overview"); // 停留在 /admin 连接页
 }
-let opsTimer = null;
+// 全局自动刷新：运维各页驻留时按各自节奏静默轮询（标签页隐藏时暂停）
+const ADMIN_REFRESH_MS = {
+  overview: 15000,
+  operations: 15000,
+  credentials: 30000,
+  reports: 30000,
+};
+const lastAutoRefresh = {};
+let adminTimer = null;
+function startAdminAutoRefresh() {
+  if (adminTimer) return;
+  adminTimer = setInterval(() => {
+    if (document.hidden || !api.value) return;
+    const view = activeView.value;
+    const interval = ADMIN_REFRESH_MS[view];
+    if (!interval) return;
+    const now = Date.now();
+    if (now - (lastAutoRefresh[view] || 0) < interval) return;
+    lastAutoRefresh[view] = now;
+    if (view === "reports") loadReports(true, true);
+    else refreshData(true);
+  }, 5000);
+}
+function stopAdminAutoRefresh() {
+  if (adminTimer) {
+    clearInterval(adminTimer);
+    adminTimer = null;
+  }
+}
 function changeView(view) {
   if (view === "guide" && !me.value) {
     ElMessage.warning(t("loginRequired"));
@@ -587,16 +619,12 @@ function changeView(view) {
   }
   activeView.value = view;
   syncPath(view);
-  if (view === "reports") loadReports();
-  // 运维页驻留时 30s 自动刷新（ETA「实时」感）；离开即停
-  if (view === "operations" && !opsTimer && api.value) {
-    opsTimer = setInterval(() => {
-      if (activeView.value === "operations") refreshData();
-      else {
-        clearInterval(opsTimer);
-        opsTimer = null;
-      }
-    }, 30000);
+  if (ADMIN_VIEWS.has(view) && api.value) {
+    // 进入页面立即拉一次（报表强制刷新缓存），随后交给全局自动刷新
+    if (view === "reports") loadReports(true);
+    else if (["overview", "operations", "credentials"].includes(view))
+      refreshData(true);
+    startAdminAutoRefresh();
   }
 }
 function syncPath(view) {
