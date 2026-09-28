@@ -428,12 +428,12 @@ watch(() => props.api, load);
             <span v-else class="muted">--</span>
           </template>
         </el-table-column>
-        <el-table-column :label="$t('apiCalls24h')" width="110" align="right">
-          <template #default="{ row }">{{ fmtCount(row.api_calls_24h) }}</template>
+        <el-table-column :label="$t('apiCallsTotal')" width="110" align="right">
+          <template #default="{ row }">{{ fmtCount(row.api_calls) }}</template>
         </el-table-column>
-        <el-table-column :label="$t('tokens24h')" width="130" align="right">
+        <el-table-column :label="$t('tokensTotal')" width="130" align="right">
           <template #default="{ row }">{{
-            fmtCount(row.total_tokens_24h)
+            fmtCount(row.total_tokens)
           }}</template>
         </el-table-column>
         <el-table-column :label="$t('createdAt')" width="110">
