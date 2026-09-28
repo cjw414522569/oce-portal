@@ -28,6 +28,12 @@ const registration = reactive({
   saving: false,
 });
 
+const idleForm = reactive({
+  preview: null, // { deleted_count, deleted_ids }
+  previewing: false,
+  deleting: false,
+});
+
 const rangeForm = reactive({
   range: null, // [Date, Date]
   preview: null, // { deleted_count, deleted_ids }
@@ -157,6 +163,41 @@ async function saveMaxUsers() {
     ElMessage.error(String(err?.message || err));
   } finally {
     registration.saving = false;
+  }
+}
+
+async function previewIdle() {
+  idleForm.previewing = true;
+  try {
+    idleForm.preview = await props.api.deleteUsersIdle(7, true);
+  } catch (err) {
+    ElMessage.error(String(err?.message || err));
+  } finally {
+    idleForm.previewing = false;
+  }
+}
+
+async function deleteIdle() {
+  try {
+    await ElMessageBox.confirm(
+      `${t("idleDeleteConfirm")} (${idleForm.preview?.deleted_count ?? "?"})?`,
+      t("idleCleanup"),
+      { type: "warning", confirmButtonText: t("confirm") },
+    );
+  } catch {
+    return;
+  }
+  idleForm.deleting = true;
+  try {
+    const result = await props.api.deleteUsersIdle(7, false);
+    ElMessage.success(`${t("deletedCount")}: ${result.deleted_count}`);
+    idleForm.preview = null;
+    total.value = Math.max(0, total.value - result.deleted_count);
+    await load();
+  } catch (err) {
+    ElMessage.error(String(err?.message || err));
+  } finally {
+    idleForm.deleting = false;
   }
 }
 
@@ -353,6 +394,33 @@ watch(() => props.api, load);
           >{{ $t("confirmDelete") }}</el-button
         >
       </div>
+      <div class="range-row mt">
+        <span class="muted">{{ $t("idleCleanupHint") }}</span>
+        <el-button
+          :loading="idleForm.previewing"
+          @click="previewIdle"
+          >{{ $t("idlePreview") }}</el-button
+        >
+        <el-button
+          type="danger"
+          plain
+          :loading="idleForm.deleting"
+          :disabled="!idleForm.preview || idleForm.preview.deleted_count === 0"
+          @click="deleteIdle"
+          >{{ $t("idleConfirmDelete") }}</el-button
+        >
+      </div>
+      <el-alert
+        v-if="idleForm.preview"
+        :title="
+          $t('idlePreviewMsg', { count: idleForm.preview.deleted_count }) +
+          ` (ID: ${idleForm.preview.deleted_ids.join(', ') || '--'})`
+        "
+        :type="idleForm.preview.deleted_count ? 'warning' : 'info'"
+        :closable="false"
+        show-icon
+        class="mt"
+      />
       <el-alert
         v-if="rangeForm.preview"
         :title="

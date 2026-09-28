@@ -40,7 +40,8 @@ export class OCEApi {
   setUserStatus(id, status) { return this.request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
   deleteUser(id) { return this.request(`/admin/users/${id}`, { method: "DELETE" }); }
   batchDeleteUsers(ids) { return this.request("/admin/users/batch-delete", { method: "POST", body: JSON.stringify({ user_ids: ids }) }); }
-  deleteUsersRegistered(dateFrom, dateTo, dryRun) { return this.request("/admin/users/delete-registered", { method: "POST", body: JSON.stringify({ date_from: dateFrom, date_to: dateTo, dry_run: dryRun }) }); }
+  deleteUsersRegistered(dateFrom, dateTo, dryRun) { return this.request("/admin/users/delete-registered", { method: "POST", body: JSON.stringify({ date_from: dateFrom, date_to: dateTo, dry_run: dryRun }) }); },
+  deleteUsersIdle(days, dryRun) { return this.request("/admin/users/delete-idle", { method: "POST", body: JSON.stringify({ days: days || 7, dry_run: dryRun }) }); }
   registrationInfo() { return this.request("/admin/users/registration"); }
   setMaxUsers(maxUsers) { return this.request("/admin/users/registration", { method: "PATCH", body: JSON.stringify({ max_users: maxUsers }) }); }
   reportApiCalls(windowHours = 24, bucket = "hour") { return this.request(`/admin/reports/api-calls?window_hours=${windowHours}&bucket=${bucket}`); }
