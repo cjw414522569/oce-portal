@@ -29,13 +29,13 @@ const metrics = computed(() =>
         },
         {
           title: t("apiCalls"),
-          value: me.value.usage_7d.api_calls,
-          foot: [t("usage7d")],
+          value: me.value.usage_total.api_calls,
+          foot: [t("usageTotal")],
         },
         {
           title: t("tokens"),
-          value: me.value.usage_7d.total_tokens,
-          foot: [t("usage7d")],
+          value: me.value.usage_total.total_tokens,
+          foot: [t("usageTotal")],
         },
       ]
     : [],
